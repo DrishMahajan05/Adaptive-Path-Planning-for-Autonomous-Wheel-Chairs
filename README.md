@@ -142,7 +142,7 @@ The system evaluates topological A* global path planning, speed profiling, and c
 
 | 📍 Short-Path Navigation | 🚀 Long-Path Navigation |
 | :---: | :---: |
-| <img src="ShortPathPhoto.jpg" alt="Short Path Navigation" width="460" /> | <img src="LongPathPhoto.jpg" alt="Long Path Navigation" width="460" /> |
+| ![Short Path Navigation](ShortPathPhoto.jpg) | ![Long Path Navigation](LongPathPhoto.jpg) |
 | **Short Path**: Local corridor maneuver demonstrating precise waypoint alignment, sharp cornering control, and dynamic wall repulsion. | **Long Path**: Extended multi-corridor navigation traversing the entire hospital floorplan with jerk-bounded velocity profiles. |
 
 </div>

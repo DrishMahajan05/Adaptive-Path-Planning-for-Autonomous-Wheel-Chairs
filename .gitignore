@@ -57,6 +57,8 @@ outputs/
 !assets/**/*.jpg
 !assets/**/*.jpeg
 !assets/**/*.svg
+!ShortPathPhoto.jpg
+!LongPathPhoto.jpg
 
 # Diagnostic / Log text files generated during simulation runs
 test_out*.txt
