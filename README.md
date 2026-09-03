@@ -14,6 +14,7 @@
 [Architecture](#-system-architecture) •
 [Quickstart](#-quickstart) •
 [Pipeline Overview](#-4-stage-classical-navigation-pipeline) •
+[Path Visualizations](#️-path-planning-visualizations-short-path-vs-long-path) •
 [Control & RL](#-controllers--rl-integration) •
 [Testing](#-testing--verification)
 
@@ -40,6 +41,7 @@
 
 - **🗺️ DXF Vector Floorplan Parser**:
   - Automated vector extraction and topological roadmap generation from real-world hospital DXF CAD floorplans ($86\text{m} \times 184\text{m}$).
+  - Evaluated on both **short-path local corridor maneuvers** and **long-path multi-corridor traversals**.
 
 - **🖥️ Interactive Viewer & Live Parameter Tuning**:
   - Real-time MuJoCo 3D visualization window.
@@ -67,6 +69,8 @@ RAS_ver.5.5/
 │   └── game_prototype.py         # 2D algorithm prototype
 ├── assets/                       # Static DXF maps, reference paper PDFs, C++ code
 ├── outputs/                      # Simulation logs, trajectory data, & PNG plots
+├── ShortPathPhoto.jpg            # Short path visual trajectory artifact
+├── LongPathPhoto.jpg             # Long path visual trajectory artifact
 └── tests/                        # Automated smoke test suite (22/22 passing)
 ```
 
@@ -127,6 +131,21 @@ flowchart LR
 3. **ARGA**: Dynamically scales turning rate $\omega_d$ to satisfy lateral acceleration upper bound $a_{y,\text{max}}$:
    $$K = \min\left(K_{\text{default}}, \frac{a_{y,\text{max}}}{v \cdot |\Delta\theta| \cdot (1 - e^{-T_a/\tau_c})}\right)$$
 4. **mHRVO**: Constructs reciprocal velocity obstacles for multi-agent dynamic obstacle avoidance while preserving corridor direction.
+
+---
+
+## 🖼️ Path Planning Visualizations: Short Path vs. Long Path
+
+The system evaluates topological A* global path planning, speed profiling, and collision avoidance across varying route lengths within the $86\text{m} \times 184\text{m}$ hospital corridor map.
+
+<div align="center">
+
+| 📍 Short-Path Navigation | 🚀 Long-Path Navigation |
+| :---: | :---: |
+| <img src="ShortPathPhoto.jpg" alt="Short Path Navigation" width="460" /> | <img src="LongPathPhoto.jpg" alt="Long Path Navigation" width="460" /> |
+| **Short Path**: Local corridor maneuver demonstrating precise waypoint alignment, sharp cornering control, and dynamic wall repulsion. | **Long Path**: Extended multi-corridor navigation traversing the entire hospital floorplan with jerk-bounded velocity profiles. |
+
+</div>
 
 ---
 
