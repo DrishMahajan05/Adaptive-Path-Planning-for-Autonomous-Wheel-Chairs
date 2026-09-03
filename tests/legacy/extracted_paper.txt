@@ -1,0 +1,1485 @@
+
+--- Page 1 ---
+Received September 24, 2020, accepted October 15, 2020, date of publication November 17, 2020,
+date of current version November 30, 2020.
+Digital Object Identifier 10.1 109/ACCESS.2020.3038452
+Path Planning Algorithm for an Autonomous
+Electric Wheelchair in Hospitals
+YEONTAEK JUNG1, YOONJAE KIM 2, WOO HYUNG LEE
+ 3, (Member, IEEE),
+MOON SUK BANG 3,5, YOUDAN KIM
+ 1, (Senior Member, IEEE),
+AND SUNGWAN KIM
+ 4, (Senior Member, IEEE)
+1Department of Aerospace Engineering, Institute of Advanced Aerospace Technology, Seoul National University, Seoul 08826, South Korea
+2Institute of Medical and Biological Engineering, Medical Research Center, Seoul National University, Seoul 03080, South Korea
+3Department of Rehabilitation Medicine, Seoul National University Hospital, Seoul National University College of Medicine, Seoul 03080, South Korea
+4Department of Biomedical Engineering, Seoul National University College of Medicine and Institute of Bioengineering, Seoul National University, Seoul 03080,
+South Korea
+5National Trafﬁc Injury Rehabilitation Hospital, Gyeonggi-do 12564, South Korea
+Corresponding author: Sungwan Kim (sungwan@snu.ac.kr)
+This work was supported by a Seoul National University Research Grant in 2018.
+ABSTRACT A novel path planning algorithm for an autonomous electric wheelchair that can be used in
+hospitals is proposed and veriﬁed. The objective of this study is to develop an autonomous path planning
+algorithm that satisﬁes body acceleration constraints for patient safety and follows paths suitable for
+hospitals. The wheelchair dynamics and equations of motion, including caster dynamics and the user’s
+inﬂuence on the wheelchair, are newly derived in this research. Since the proposed algorithm is based
+on two-wheel robot kinematics, it is applicable to most two-wheel actuated systems. When a wheelchair’s
+destination is set, a series of waypoints is computed and then the desired speed & attitude at each waypoint of
+the path are designed. Then, a speed proﬁle is designed to minimize the travel time while adaptively changing
+the angular rate gain to minimize excessive lateral motion. As a result, the linear speed command of each
+actuated wheel is computed. Additionally, the hybrid reciprocal velocity obstacle algorithm is updated to
+guarantee that the body acceleration constraints are satisﬁed for applications with complicated dynamics.
+The performance of the proposed algorithm, with the full dynamics of the wheelchair, is demonstrated
+by extensive numerical simulations with conventional toy problems and then evaluated in two hospitals.
+The simulation results demonstrate that the proposed algorithm satisﬁes body acceleration constraints while
+following paths which are suitable for hospitals and that the proposed autonomous electric wheelchair could
+be applied in hospitals.
+INDEX TERMS Autonomous electric wheelchair, collision avoidance, model uncertainty, path planning,
+wheelchair modeling.
+I. INTRODUCTION
+The patient transportation system is an important hospital
+system that should receive attention for patient safety and
+efﬁcient clinical care [1]. Demand for transportation systems
+among individuals with disabilities has been increasing with
+the aging population and increased number of survivors after
+life-threatening diseases [2], [3]. Recently, technology for
+autonomous transportation has demonstrated the potential
+for widespread adoption in numerous healthcare ﬁelds [4].
+The wheelchair system, which is one of the conventional
+The associate editor coordinating the review of this manuscript and
+approving it for publication was Emre Koyuncu
+.
+transportation devices in a hospital, could be advanced via
+the application of a new technology—autonomous control—
+to enhance the performance and safety of wheelchairs by
+considering input methods, operating modes, and human
+factors [5].
+Research related to wheelchair path planning can be clas-
+siﬁed into three categories: the shared control approach,
+local path planning to avoid collision, and global path plan-
+ning to a destination or waypoint. In previous studies where
+shared control is applied, estimating the user’s intention
+is most important because global path planning is con-
+ducted by the user; the wheelchair only assists in local path
+planning [6]–[11]. In [9], [10], the user model was
+VOLUME 8, 2020 This work is licensed under a Creative Commons Attribution 4.0 License. For more information, see https://creativecommons.org/licenses/by/4.0/ 208199
+--- Page 2 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+constructed as a Bayesian model using the user’s driving data.
+Even though the shared control approach is a good option for
+assisting users, it is not suitable for operating an autonomous
+wheelchair in a hospital. First, it is difﬁcult to collect and
+learn the data because the wheelchair is used by untrained and
+unspeciﬁed persons, so the user model cannot be speciﬁed.
+Second, in a hospital, destinations for users are determined
+according to the treatment or examination. Thus, estimating
+the intent of all users is not possible and/or inefﬁcient.
+Prior studies have designed global paths based on the
+comfort of wheelchair users [12], [13]. In [12], a path was
+designed for the user to feel psychological comfort across
+the entire ﬂoor. To this end, discomfort was quantiﬁed as
+a three-variable cost function, which consists of a location
+discomfort cost, an area visibility cost, and a path length cost,
+and was evaluated by participants in an experiment. Each cost
+relates the distance from a wall and the speed of travel in a
+straight corridor, an area that can be seen, and the distance the
+wheelchair has to travel. In [13], not only the psychological
+comfort of the user but also that of a pedestrian passing by
+the wheelchair were considered. The wheelchair, however,
+only follows a predetermined path in the both studies and
+does not avoid a pedestrian, which means it is entirely the
+responsibility of the pedestrian to avoid the wheelchair. Addi-
+tionally, only one pedestrian was considered in [13] and there
+is no consideration about pedestrians in [12]. This situation is
+not suitable for hospitals, where many people are traveling in
+various directions and some patients are unable to avoid the
+wheelchair. This situation not only makes the wheelchair user
+vulnerable to moving obstacles and changing maps but also
+leads to a measure of discomfort in each new place, incurring
+expensive costs.
+Other studies have focused on the design of a local path
+to avoid collisions [14]–[17] but have considered only face-
+to-face situations and did not cover global path planning.
+In these studies, simple models such as a point mass system
+were used as the wheelchair model. In [16], an improved
+collision avoidance algorithm was proposed for a wheelchair
+with a companion traveling side-by-side while pedestrians
+pass face to face. The motivation of this study was to create a
+collision avoidance path that takes into account the relation-
+ship between the occupant and companion, with the ultimate
+goal of mapping out a human-like collision avoidance strat-
+egy. To this end, data were collected on the path generated by
+a user for collision avoidance, and a navigation model was
+developed using the data. The navigation model addresses
+only the situation in which a wheelchair and a pedestrian are
+encountered in a straight corridor and generates a local path
+for collision avoidance. Global path planning and local path
+planning, however, have to be considered together because of
+the need for efﬁcient transportation in a hospital and collision
+avoidance for user safety, respectively.
+Although the considered plant is not a wheelchair, some
+studies designed global and local paths using the potential
+ﬁeld method with a social force, called social-aware navi-
+gation. The studies included path planning approaches that
+consider the context of people around the path [18]–[23].
+Global and local paths that used the potential ﬁeld method
+with a social force were constructed in some studies.
+In [19], [20], a social-aware path using a social zone was
+designed, which is an area constructed by people who
+share a relationship. A learning algorithm was also used
+to investigate which path is suitable in a crowded environ-
+ment [21], [22], and psychological constraints were used to
+predict the path of people around a plant [23]. Although
+some interesting results have been reported, only a simple
+two-wheel robot was employed to verify the algorithms, and
+the user’s safety was not considered in the research because
+the plants considered in these studies were robots without a
+user.
+In this study, a path planning algorithm for an autonomous
+electric wheelchair operated in hospitals is proposed. The
+proposed algorithm designs suitable path for hospital, not
+only a local path but also a global path to reach a destination.
+The local path planning is deﬁned as planning the path to
+avoid collision and the global path planning is deﬁned as
+planning the speed and direction to get to the destination
+or waypoint. Two-wheel robot kinematics with a ﬁrst-order
+dynamic system are used in the proposed algorithm such
+that it can be applicable to most two-wheel actuated system
+with more complex components in general. Furthermore,
+the wheelchair dynamics are newly derived, including not
+only a friction model and caster dynamics but also the user’s
+inﬂuences on the wheelchair, and are used in numerical sim-
+ulations. The proposed algorithm satisﬁes the body accelera-
+tion constraints for user safety by designing the speed proﬁle
+and adjusting the gain related to the angular rate. The hybrid
+reciprocal velocity obstacle (HRVO) algorithm is modiﬁed to
+guarantee that the body acceleration constraints are satisﬁed
+while avoiding collisions and to ensure that the algorithm
+can be applied to complicated dynamics. The algorithm is
+demonstrated by numerical simulations with the wheelchair
+dynamics in both toy problems and real hospital maps.
+II. PRELIMINARY
+In this section, the HRVO algorithm is described, followed
+by a series of equations for the two-wheel robot kinematics
+and model approximation. Model approximation makes the
+proposed algorithm applicable to most two-wheel actuated
+system with more complex components. Finally, a proper
+shape of the path for the wheelchair in a hospital is proposed.
+A. HYBRID RECIPROCAL VELOCITY OBSTACLE
+ALGORITHM
+The HRVO algorithm [24] is one of the variations of the
+velocity obstacle (VO) algorithm [25]. The HRVO algorithm
+solves the oscillation problem known as ‘‘reciprocal dances’’
+[26] in the reciprocal velocity obstacle (RVO) algorithm [27],
+which is also one of the variations of the VO algorithm. The
+VO algorithm is a local and reactive navigation algorithm
+that uses a collision cone [28] to avoid a collision. The
+VO algorithm makes the VO area where an agent’s velocity
+208200 VOLUME 8, 2020
+--- Page 3 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+vector should not be located to avoid the collision, as shown
+in Fig. 1(a). The RVO algorithm considers the counterpart’s
+movement to avoid collision. The RVO algorithm assumes
+that the counterpart will perform half of the movement to
+avoid collision. Thus, the RVO area’s boundaries are parallel
+to the boundary of the VO area and through a point that is
+the midpoint of the agent’s velocity vector and counterpart’s
+velocity vector, as shown in Fig. 1(b).
+FIGURE 1. (a) Velocity obstacle, (b) reciprocal velocity obstacle, and
+(c) hybrid reciprocal velocity obstacle.
+The HRVO algorithm mixes the boundary of the VO area
+and the boundary of the RVO area as shown in Fig. 1(c).
+The RVO algorithm considers only the amount of the coun-
+terpart’s movement to avoid collisions. On the other hand,
+the HRVO algorithm considers the direction and amount of
+the movement. If the agent’s velocity vector is to the left
+of the centerline, which is through the vertex of the RVO
+area, the left boundary of the HRVO area is that of the
+RVO area, and the right boundary of the HRVO area is that
+of the VO area. Thus, the agent and the counterpart choose
+the same direction to avoid collision. If the agent wants to
+choose a new velocity on the other side by the centerline to
+avoid collision, the agent has to avoid the collision under the
+assumption that the counterpart does not act in the collision
+avoidance movement. If the desired velocity vector is in the
+HRVO area, the velocity vector that has a small norm of the
+difference from the desired velocity vector and is outside
+the HRVO area is chosen as the collision-free velocity vector.
+B. TWO-WHEEL ROBOT KINEMATIC EQUATIONS AND
+MODEL APPROXIMATION
+The two-wheel robot kinematic equations and each linear
+speed of the wheels are represented as follows [20]:
+
+
+˙x
+˙y
+˙θ
+
+=
+
+
+vr+ vl
+2 cosθ
+vr+ vl
+2 sinθ
+vr− vl
+d
+
+
+(1)
+[vr
+vl
+]
+=
+
+
+vd+ Kd(θd−θ)
+2
+vd− Kd(θd−θ)
+2
+
+ (2)
+where x, y is the position of the two-wheel robot’s center,
+vr and vl are the linear speeds of the right and left wheels,
+respectively,θ is the attitude, vd is the desired speed at the
+middle point of the actuated wheels,θd is the desired attitude,
+K is the angular rate gain, and d is the two-wheel robot’s
+width, as shown in Fig. 2.
+FIGURE 2. Two-wheel robot diagram.
+The complexity of the wheelchair model and model uncer-
+tainties, including the friction model, displacement of the
+center of gravity (CG), moment of inertia, etc., make it harder
+to employ the full dynamics of a wheelchair for path planning.
+Thus, the two-wheel robot kinematics with the ﬁrst-order
+dynamic system are used not only to address the uncertainties
+but also to make the proposed algorithm applicable to most
+two-wheel actuated systems with more complex components
+in general. For this purpose, the linear speeds of the wheels
+in (2) are modeled as the ﬁrst-order dynamic system as
+[˙vr
+˙vl
+]
+=
+
+
+− 1
+τc
+vr+ 1
+τc
+vr,d
+− 1
+τc
+vl+ 1
+τc
+vl,d
+
+ (3)
+where vr,d, vl,d are the desired linear speeds of each wheel,
+which are the reference signals generated by the proposed
+algorithm.τc is a design parameter used to address the uncer-
+tainties of the system, including not only model uncertainties
+but also any time-delay components caused by performance
+of the controller, actuator dynamics, etc. τc indicates how
+slowly the wheelchair follows the desired linear speed of each
+wheel compared to the two-wheel robot. Thus, the ﬁrst-order
+dynamic system will represent the difference between the
+two-wheel robot and the wheelchair dynamics. As a result,
+if the system has two actuated wheels and the kinematics
+of the wheels can be approximated as the two-wheel robot
+kinematics, then the proposed path planning algorithm can
+be used.
+C. PROPER SHAPE OF THE PATH FOR A WHEELCHAIR
+OPERATED IN A HOSPITAL
+Generally, path planning algorithms with dynamic constraints
+can satisfy the constraints by generating a smooth path with
+a large radius of curvature. The path could pass by the way-
+point, as shown in Fig. 3(a), or just pass nearby, as shown
+in Fig. 3(b). A path with a large radius of curvature, however,
+is not suitable for hospitals because the hospital environment
+usually has narrow spaces that are not sufﬁcient for turning
+with a large radius of curvature such as in narrow corridors,
+conﬁned spaces, and a lobby with many people moving in
+any direction. In addition, a user has to endure lateral body
+acceleration over a longer amount of time in the case of a
+large radius of curvature. It could be dangerous because some
+VOLUME 8, 2020 208201
+--- Page 4 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+FIGURE 3. (a) A curved path through the waypoints, (b) a curved path
+near the waypoints, and (c) a path designed to have almost zero radius of
+curvature.
+patients using the wheelchair cannot withstand the lateral
+body acceleration due to lack of core muscles, spinal injury,
+or any other reasons. Therefore, the wheelchair should nearly
+stop and turn at the waypoint, as shown in Fig. 3(c), which is
+more feasible in a hospital with narrow spaces and decreases
+the amount of time to endure body acceleration. In this
+sense, we propose a path planning algorithm that meets the
+constraints by adjusting the wheelchair’s speed and angular
+rate instead of designing the path that has a large radius of
+curvature.
+III. WHEELCHAIR DYNAMIC EQUATIONS
+In this section, the wheelchair dynamics are derived anew
+by referring to [29], [30]. The wheelchair dynamics consider
+not only caster dynamics but also the displacement of the
+CG that represents the user’s inﬂuences on the wheelchair.
+The wheelchair dynamics are used in the numerical sim-
+ulation, unlike other studies that used two-wheel robot
+kinematics [14], [20], [24]. This approach shows that the
+proposed path planning algorithm can be applied to more
+complicated wheelchair dynamics, although the two-wheel
+robot kinematics are used in the algorithm, which is addressed
+in Sections IV and V.
+A. FREE BODY DIAGRAM
+The wheelchair model considered in this study has two actu-
+ated rear wheels and two passive front casters, as shown
+in Fig. 4(a). Coordinate {i} is the inertial coordinate and coor-
+dinate {b} is the body coordinate. The actuator is modeled
+as the ﬁrst-order dynamic system with saturation. Fig. 4(b)
+shows a free body diagram of the wheelchair’s body frame.
+In Fig. 4(b), G is the CG, R is the right actuated wheel’s
+position, L is the left actuated wheel’s position, CR is the
+position of pivot of the right passive caster, CL is that of
+the left passive caster, d is the wheelchair’s width, a is the
+distance from the CG to the midpoint of CL and CR, b is the
+distance from the midpoint of two actuated wheels to the CG,
+and¯x,¯y is the displacement of the CG.
+FR is the right actuated wheel’s force, which is represented
+as
+FR= τR
+r (4)
+whereτR is the torque of the right wheel’s actuator modeled
+as the ﬁrst-order dynamic system, and r is the wheel’s radius.
+fR is the friction force at R, fCR is the force applied to the
+FIGURE 4. (a) Wheelchair diagram, and (b) free body diagram of the
+wheelchair.
+body frame by the right passive caster, and RR is the reaction
+force caused by assuming that R does not slip sideways. The
+force with subscript L has the same meaning as above but
+for the left wheel. fmsd,x, fmsd,y are the forces representing the
+user’s inﬂuences on the wheelchair. The friction force and
+the normal force at R, L, CR and CL are modeled by referring
+to [29] and [30], respectively.
+B. DISPLACEMENT OF THE CENTER OF GRAVITY
+There exists an uncertainty about the wheelchair’s CG as a
+result of the user’s movement while driving. In this study,
+the displacement of the CG is designed as a mass-spring-
+damper system actuated by the wheelchair’s body accelera-
+tion as
+mmsd¨¯x+ c˙¯x+ k¯x=− fmsd,x (5)
+mmsd¨¯y+ c˙
+¯y+ k¯y=− fmsd,y (6)
+fmsd=− mmsda (7)
+where mmsd, c, and k are the mass, spring constant, and
+damping constant, respectively, anda is the body acceleration
+vector.
+C. DYNAMIC EQUATIONS OF THE BODY FRAME
+The dynamic equations of a wheelchair body frame are
+deﬁned as
+mi˙vG/i= FR+ FL+ Freact+ fR+ fL+ fCR
++fCL+ fmsd (8)
+Jbαb/i= Mz (9)
+where m is the total mass, iPvG/i is the derivative of vG/i in the
+inertial frame, Freact is the sum of reaction forces, RR+ RL,
+Jb is the moment of inertia of the system with respect to the
+body coordinates’ z-axis,αb/i is the angular acceleration, and
+Mz is the z component of the total moment. The assumption
+that the actuated wheels do not slip sideways can be expressed
+as
+jb· vR/i= 0 (10)
+where jb is the body frame’s y direction unit vector.
+208202 VOLUME 8, 2020
+--- Page 5 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+The sum of reaction forces represented in the body coor-
+dinates, Fb
+react, can be found as follows. By taking the time
+derivative of (10) in the body frame, the following equation
+can be obtained.
+jb
+b· (b˙vb
+G/i+αb
+b/i× pb
+R/G)= 0. (11)
+Additionally, (8) can be transformed to the following
+equation in the body frame.
+b˙vb
+G/i+ωb
+b/i× vb
+G/i= 1
+m (Fb+ Fb
+react). (12)
+Then, substituting (9) and (12) into (11), the sum of reaction
+forces is calculated as
+Freact,y= Jb
+Jb+ mb2 (mωb/ivG/i,x+ mb
+Jb
+Mz
+−fCR,y− fCL,y− fmsd,y) (13)
+where Fb is the total force vector except for the reaction force
+represented in the body coordinates, and Freact,y represents
+the y components of Fb
+react. The x and z components of Fb
+react
+are zero, as shown in Fig. 4(b).
+D. DYNAMIC EQUATIONS OF THE CASTERS
+Fig. 5 shows the free body diagram of the caster [30].
+In Fig. 5, {b} is the body coordinate, {c} is the caster coor-
+dinate,α is the angle of the caster coordinate about the body
+coordinate, fClon is friction applied to the caster’s longitudinal
+direction, and fClat is friction applied to the caster’s lateral
+direction. Note thatα is a second-order dynamic systems as
+[˙α
+¨α
+]
+=
+[0 1
+0 0
+][α
+˙α
+]
++
+
+
+0
+−p
+Jc
+
+ fClat. (14)
+FIGURE 5. Free body diagram of the caster.
+Furthermore, the force applied from the caster to the body
+frame is represented as
+fC= fClon cosα+ fClat sinα (15)
+where Jc is the caster’s z axis moment of inertia, µc is the
+friction coefﬁcient of the caster, and vc
+C is the velocity at the
+caster’s pivot in the caster coordinates.
+IV. PROPOSED PATH PLANNING ALGORITHM
+Fig. 6 shows a schematic diagram of the autonomous
+wheelchair system for operation in hospitals. When a des-
+tination is speciﬁed, the proposed path planning algorithm
+computes each desired linear speed of the actuated wheels
+based on the destination and state. Then, the controller com-
+putes each actuator input to follow the desired linear speed
+of the actuated wheels. In this study, a proportional-integral-
+derivative (PID) controller is used, but any other controllers
+can be used.
+FIGURE 6. Autonomous wheelchair system configuration.
+The proposed path planning algorithm block in Fig. 6 con-
+sists of four main blocks, namely, the ‘‘Waypoint and Attitude
+Planning (W AP) algorithm’’, ‘‘Speed Proﬁle Design (SPD)
+algorithm’’, ‘‘Angular Rate Gain Adaptation (ARGA) algo-
+rithm’’, and ‘‘modiﬁed HRVO (mHRVO) algorithm’’ blocks.
+The ‘‘Desired Linear Speed of Wheels’’ block just converts
+the desired speed and attitude to the desired linear speed of
+the wheels using (2). Every block obtains the state feedback,
+which makes each block more robust. To be brief, W AP and
+SPD compute the desired attitude and speed considering the
+proper shape of the path and body acceleration constraints,
+respectively. Then, mHRVO modiﬁes the desired attitude and
+speed to avoid collision, while A VGA modiﬁes the angular
+velocity gain to satisfy body acceleration constraints.
+In this study, the local path planning is deﬁned as planning
+the path to avoid collision and the global path planning is
+deﬁned as planning the speed and direction to get to the
+destination or waypoint, so mHRVO is for the local path
+planning, W AP and SPD are for the global path planning, and
+A VGA meets the body acceleration constraints by assisting
+other blocks. Especially, SPD takes greater account of longi-
+tudinal body acceleration constraints and A VGA takes greater
+account of lateral body acceleration constraints to make the
+user feel safe and comfortable.
+A. WA YPOINT AND ATTITUDE PLANNING ALGORITHM
+The main purposes of this block are determining a set of
+waypoints that should be used to travel to the destination in
+the shortest way based on the current position and computing
+the desired attitude. Determining the set of waypoints is
+VOLUME 8, 2020 208203
+--- Page 6 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+performed using Dijkstra’s algorithm [31] based on given
+information of a global map, that is, which waypoints are
+connected. The desired attitude is either the waypoint attitude
+or driving attitude depending on the distance between the
+current position and the waypoint to go. If the distance is
+within a certain distance, the waypoint attitude is the desired
+attitude. Otherwise, the driving attitude is the desired attitude.
+The waypoint attitude is a desired attitude at the waypoint.
+If the waypoint is the destination, then the desired attitude is
+a predeﬁned attitude based on an action taken by the user.
+For example, if the destination is the reception desk, then
+the user would want to look at the reception desk at the
+destination. Thus, the waypoint attitude at the destination
+is the direction toward the reception desk. If the waypoint
+is not the destination, the waypoint attitude is the direction
+toward the next destined waypoint. The driving attitude is the
+direction from the current position to the destined waypoint.
+B. SPEED PROFILE DESIGN ALGORITHM
+The main purpose of this block is to design a speed proﬁle
+that minimizes the transportation time to the destination while
+satisfying the body acceleration constraints and makes the
+wheelchair have a path in the shape addressed in II-C. One of
+the easiest ways for a wheelchair to have a path in the shape
+addressed in II-C is stopping at every waypoint and turning
+to the desired direction. However, it causes bump friction at
+every waypoint, which not only makes users uncomfortable
+but also makes them unsafe. In addition, if the change in
+the direction at the waypoint is small, then every stop at the
+waypoint is a waste of time becasue the wheelchair can turn to
+the desired direction with nonzero speed while satisfying the
+body acceleration constraints. Thus, SPD designs the speed at
+the waypoints, called waypoint speed, and the speed proﬁle
+reduces the transportation time to the destination while satis-
+fying the body acceleration constraints. Note that it is natural
+that the desired speed at the destination is zero.
+The waypoint speed that satisﬁes the body acceleration
+constraints can be calculated using the approximated model
+and waypoint attitude computed by W AP . We have
+˙vr−˙vl=− 1
+τc
+(vr− vl)+ 1
+τc
+Kd(θd−θ). (16)
+by (3) and substituting vr,d and vl,d into (2). In addition,
+vr− vl can be expressed as
+vr− vl= (vr,0−vl,0)e− 1
+τc ta+Kd(θd−θ)(1−e− 1
+τc ta). (17)
+by solving (16) and setting the timet as ta, which is the design
+parameter used to address model uncertainty such as τc. As a
+result,˙θ can be obtained by (1) and (17) as
+˙θ= (vr,0− vl,0)e− 1
+τc ta+ Kd(θd−θ)(1− e− 1
+τc ta)
+d (18)
+where vr,0 and vl,0 are the current linear speeds of the right
+and left wheels, respectively.
+Let us deﬁne ta as the approaching speed, which indicates
+how fast the wheel’s linear speed approaches the desired
+speed. Additionally, ta can be interpreted as the similarity
+between the two-wheel robot and the real plant including
+a controller. Therefore, if ta increases to ∞, (18) turns
+to (1), which means that the wheel’s linear speed immediately
+becomes the desired speed and the plant with the controller
+is same as the two-wheel robot.
+Because the lateral body acceleration is v˙θ, which must not
+exceed the maximum lateral body acceleration, the waypoint
+speed can be calculated as
+vf=
+
+
+
+ay,maxd
+(vr,0− vl,0)e− 1
+τc ta+ Kdeθ (1− e− 1
+τc ta)
+, |eθ|>ϵ
+vmax, |eθ|≤ ϵ
+(19)
+where vf is the waypoint speed,θf,w is the waypoint attitude,
+θw is the direction from the current position to the waypoint,
+eθ isθf,w−θw,ϵ is an arbitrary small constant, ay,max is the
+maximum lateral body acceleration, andvmax is the maximum
+speed of the wheelchair set for user safety.
+Once the waypoint speed is generated, the procedure
+designing the speed proﬁle can be formulated as an opti-
+mization problem, i.e., a minimum time problem with a ﬁxed
+ﬁnal state and inequality constraints on the control and state
+variables. In this study, the optimization problem is deﬁned
+as
+J=
+∫ tf
+0
+1dt (20)
+subject to
+[˙v
+˙z
+]
+=
+[0 0
+1 0
+][v
+z
+]
++
+[1
+0
+]
+a, (21)
+and [v(tf )
+z(tf )
+]
+=
+[vf
+l
+]
+, 0≤ v≤ vmax, ax,lb≤ a≤ xx,ub
+where l is the distance from the current position to the
+waypoint, a is the acceleration, ax,lb and ax,ub are the lower
+and upper bounds of the longitudinal acceleration constraint,
+respectively, and v is the speed of the middle point of the
+actuated wheels.
+Let us deﬁne the Hamiltonian function as
+H= 1+λ1a+λ2v+µ1(ax,lb− a)+µ2(a− ax,ub)
++µ3(−a)+µ4a. (22)
+Then, the optimal control input with corner conditions can be
+found [32] as
+a∗= mina H
+=
+
+
+
+0, v= 0 or v= vmax
+ax,lb, 0< v< vmax andλ1−µ1+µ2> 0
+ax,ub, 0< v< vmax andλ1−µ1+µ2< 0
+(23)
+where a∗ is optimal control input. Note from (23) that the
+optimal input is 0, ax,lb, or ax,ub. The results are similar to
+208204 VOLUME 8, 2020
+--- Page 7 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+bang-bang control but take into account the time delay of the
+wheelchair. In addition, the controller inputs are continuous
+because they are generated by (29). Thus, the response of
+the wheelchair is smoother. It makes the user safer and more
+comfortable.
+The corner conditions are too complicated to determine
+which optimal input should be selected through the equation,
+so the graphic conditions shown in Fig. 7 are used in this
+study to determine which optimal input should be chosen.
+The optimal input depends on the current speed, waypoint
+speed, and distance from the current position to the waypoint.
+If the current speed and waypoint speed are both vmax, it is
+natural that the optimal input is zero. Additionally, while the
+wheelchair is turning at the waypoint, the desired speed is
+maintained as its waypoint speed.
+FIGURE 7. (a) Speed profile in case 1), (b) speed profile in case 2),
+(c) speed profile in case 3) when the distance to the waypoint is shorter
+than S′ in (26), and (d) the speed profile in case 3) when the distance to
+the waypoint is longer than S′ in (26).
+1) vf < v0= vmax
+If the current speed is vmax and the waypoint speed
+is smaller than vmax, then the optimal input is either
+zero or ax,lb. In this case, the optimal input depends on
+whether the distance from the current position to the
+waypoint is longer than the following distance, S1.
+S1=
+v2
+max− v2
+f
+−2ax,lb
+. (24)
+In Fig. 7(a), if the distance from the current position
+to the waypoint is longer than S1, the optimal input is
+zero, and otherwise, the optimal input is ax,lb.
+2) v0< vf= vmax
+If the waypoint speed is vmax and the current speed
+is smaller than vmax, then the optimal input is either
+zero or ax,ub. In this case, the optimal input depends
+on whether the distance from the current position to the
+waypoint is longer than the following distance, S2.
+S2= v2
+max− v2
+0
+2ax,ub
+. (25)
+In Fig. 7(b), if the distance from the current position
+to the waypoint is longer than S2, the optimal input
+is ax,ub, and otherwise, the optimal input is zero.
+3) vf̸= vmax, v0̸= vmax
+If both the waypoint speed and the current speed are
+not vmax, then the optimal input can be one of (23),
+which depends on whether the distance from the current
+position to the waypoint is longer than the following
+distance.
+S3= 1
+2 ( v2
+max− v2
+0
+ax,ub
++
+v2
+f− v2
+max
+ax,lb
+). (26)
+S4=
+v2− v2
+f
+−2ax,lb
+. (27)
+If the distance from the current position to the waypoint
+is shorter than S3, the optimal input is ax,ub, whereas
+the distance to the waypoint is longer than S4. Then,
+the optimal input is ax,lb, as shown in Fig. 7(c). If the
+distance to the waypoint is longer than S3 and shorter
+than S4, the optimal input is ax,ub unless the current
+speed reaches vmax. Then, the optimal input is zero if
+the distance to the waypoint is longer than S1, and the
+optimal input is ax,lb if the distance to the waypoint is
+shorter than S1, as shown in Fig. 7(d).
+The speed at the middle point of the two actuated wheels
+can be expressed by (1) and (3) as follows.
+˙v=− 1
+τc
+v+ 1
+τc
+vd. (28)
+If the optimal acceleration is found from the minimum time
+problem, the desired speed at the middle point of the actuated
+wheels can be computed as
+vd= v+τca. (29)
+To speed up the response of the system’s speed, the large τc
+will increase the change in the desired speed, which relates to
+the longitudinal body acceleration.
+On the other hand, at the initial position where the
+wheelchair is at a standstill, it is good to set the attitude
+of the wheelchair along the desired direction before moving
+to the destination for the user. For example, the wheelchair
+should change the direction ﬁrst and then move to the desti-
+nation if the direction to the destination is different from the
+wheelchair’s initial attitude. Thus, the desired speed at the
+initial position is set to zero until the wheelchair’s attitude is
+toward the desired direction.
+VOLUME 8, 2020 208205
+--- Page 8 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+C. ANGULAR RATE GAIN ADAPTATION ALGORITHM
+There exist two factors that decide the lateral body acceler-
+ation, (i) speed, and (ii) angular rate, but the SPD adjusts
+only the speed. The angular rate, however, should also be
+considered to meet the lateral body acceleration constraint.
+The main purpose of this block is to adjust the angular rate
+gain so that the lateral body acceleration constraint is not
+exceeded and to minimize the transportation time.
+The angular rate can be expressed as
+ω= K (θd−θ)(1− e− 1
+τc ta) (30)
+by (18) and assuming vr,0= vl,0. Thus, K can be obtained as
+K= min
+(
+ay,ub
+v|θd−θ|(1−e− 1τc ta )
+, Kmax
+)
+. (31)
+Note that there are two variables, v and|θd−θ| in (31). It is
+obvious that if a wheelchair’s speed increases, the angular rate
+gain decreases so that the lateral body acceleration constraint
+is not exceeded. On the other hand, if |θd−θ| decreases,
+the angular rate gain increases until Kmax to quickly reach
+the desired attitude. The role of Kmax is that if |θd−θ| is
+sufﬁciently small, the process of θ approaching θd will be
+slow. This prevents a chattering problem around θd .
+D. MODIFIED HRVO ALGORITHM
+The HRVO algorithm is a collision avoidance algorithm suit-
+able for various collision avoidance problems. Three prob-
+lems, however, have to be considered for an application
+of an autonomous wheelchair operated in a hospital. First,
+the HRVO algorithm cannot address the case in which the
+desired speed is zero and the wheelchair needs to change
+only the attitude. Most collision avoidance problems do not
+consider this case because the objective is mostly to min-
+imize time, fuel, or travel distance. When the wheelchair
+starts to move from a standstill, however, it is natural that
+the wheelchair changes the attitude to the desired direc-
+tion ﬁrst because of the need for user safety. In a hospital,
+the wheelchair often stops as one waits for their turn, sees a
+doctor, etc. Second, although the HRVO algorithm considers
+the system’s acceleration limitations [24], it cannot address
+a time delay in the system. It is difﬁcult to apply the HRVO
+algorithm to a complicated system since the HRVO algorithm
+assumes the system reacts immediately. Third, in the HRVO
+algorithm, if the desired velocity vector is in the HRVO area,
+then the velocity vector that has a small norm of the difference
+from the desired velocity vector and is outside the HRVO
+area is chosen as the collision-free velocity. If the objective
+of the algorithm is to minimize the time-to-go to the goal
+without a collision, the best strategy is to maintain a minimum
+variation from the desired velocity. The most important aspect
+in wheelchair path planning, however, is user safety. Thus,
+the collision-free velocity has to be selected in a different
+way. For those problems, the HRVO algorithm is modiﬁed
+to address the standstill situation, the complicated system
+application, and the guarantee of user safety in this study.
+For the ﬁrst and second problems, the modiﬁed HRVO
+algorithm makes a modiﬁed HRVO area and ﬁnds the
+collision-free speed and attitude instead of ﬁnding the
+collision-free velocity vector. The modiﬁed HRVO area has
+two differences from the HRVO area. First, if the desired
+speed is zero and a static obstacle is considered, the bound-
+aries of the VO area become those of the modiﬁed HRVO
+area. If an obstacle is a moving obstacle, choosing the bound-
+aries of the modiﬁed HRVO area depends on whether the
+obstacle moves closer or not. If the obstacle moves closer
+to the wheelchair, one boundary of the modiﬁed HRVO area
+is parallel to the obstacle’s velocity vector, and the other
+boundary is toward the obstacle. Otherwise, there is no mod-
+iﬁed HRVO area from the obstacle. Whether the obstacle
+moves closer or not is deﬁned by whether the obstacle’s
+relative velocity vector has an element toward the wheelchair.
+Second, a modiﬁed HRVO area is made not using the cur-
+rent wheelchair’s position but using the predicted position of
+the wheelchair. As the system in the proposed algorithm is
+considered as two-wheel robot kinematics with the ﬁrst-order
+dynamic system, the system’s speed can be computed with
+ta deﬁned in IV -Bas
+vta= v0e− 1
+τc ta+ vd (1− e− 1
+τc ta). (32)
+Now, let us consider that the wheelchair maintains the cur-
+rent speed during e− 1
+τc ta seconds because of the system’s
+time delay. Then, when making the modiﬁed HRVO area,
+the wheelchair’s position is
+[xmHRVO
+ymHRVO
+]
+=
+[
+x0+ v0e− 1
+τc ta cosθ0
+y0+ v0e− 1
+τc ta sinθ0
+]
+. (33)
+If ta grows indeﬁnitely, which means that the system
+dynamics are similar to the two-wheel robot kinematics, or
+τc becomes inﬁnitely small, which means that the sys-
+tem’s time delay goes to zero, then the change in the
+wheelchair’s position goes to zero. If the changed position
+passes by an obstacle and moves to a noncollision location,
+then the position is not changed, and the boundaries of the
+modiﬁed HRVO area become a straight line perpendicu-
+lar to the wheelchair’s direction. As a result, the modiﬁed
+HRVO algorithm determines the collision-free speed and
+attitude to avoid a collision in advance.
+For the third problem, the collision-free speed and attitude
+are chosen as follows. The collision-free speed is among
+the desired speed, the current speed, or the smallest speed
+while satisfying the longitudinal acceleration constraint. The
+collision-free attitude is the closest to the desired attitude.
+When the modiﬁed HRVO area is made, the algorithm checks
+whether the desired speed and attitude are in the HRVO set
+which is a set of the speed and attitude in the modiﬁed
+HRVO area. If not, the desired speed and attitude become
+the collision-free speed and attitude. If so, a set of attitudes
+satisfying the lateral body acceleration constraints is made
+assuming that the desired speed is the current speed.
+208206 VOLUME 8, 2020
+--- Page 9 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+The lateral body acceleration can be expressed as (34)
+using (18) and (32).
+vta˙θ= (v0e− 1
+τc ta+ vd (1− e− 1
+τc ta))(˙θe− 1
+τc ta
++K (θd−θ)(1− e− 1
+τc ta)). (34)
+Thus, the attitude range satisfying the lateral body accelera-
+tion constraint can be computed.
+1
+Kta
+( ay,lb
+vta
+−˙θe− 1
+τc ta
+)
+≤1θ≤ 1
+Kta
+( ay,ub
+vta
+−˙θe− 1
+τc ta
+)
+(35)
+where1θ= θd−θ and Kta= K (1− e− 1
+τc ta). If all of the
+elements of the set are not in the HRVO set , the current speed
+and the attitude closest to the desired attitude become the
+collision-free speed and attitude, respectively. If so, the algo-
+rithm decreases the desired speed as much as possible while
+satisfying the longitudinal body acceleration constraint. The
+decreased speed is computed by (29), and another set of
+attitudes satisfying the lateral body acceleration constraint is
+made with the decreased speed. Finally, the algorithm checks
+whether all of the elements of the set are in the HRVO set .
+If not, the decreased speed and the attitude closest to the
+desired attitude become the collision-free speed and attitude,
+respectively. If so, the decreased speed is the collision-free
+speed, and of the two boundaries of the modiﬁed HRVO area,
+the attitude close to the current attitude is the collision-free
+attitude. Fig. 8 shows a summary of the modiﬁed HRVO
+algorithm.
+V. NUMERICAL SIMULATIONS AND DISCUSSION
+The performance of the proposed path planning algorithm
+is demonstrated by numerical simulations with python. The
+simulations are conducted for conventional toy problems and
+real hospital maps. First, the proposed algorithm is compared
+with the HRVO algorithm for a toy problem with static obsta-
+cles and that with moving obstacles. Then, the simulation
+results using the proposed algorithm with different values of
+the design parameters, τc, ta, and Kmax, in the toy problem
+with static obstacles are compared to observe the inﬂuences
+of the parameters. After a comparison with the toy problems,
+the performance of the proposed algorithm for real hospital
+maps is demonstrated. There are two maps of real hospitals
+utilized in this study: One map for part of the National Trafﬁc
+Injury Rehabilitation Hospital (NTIRH) and the other map
+for part of the Seoul National University Hospital (SNUH).
+In a hospital, the waypoints are markers on the hospital’s
+wall and ceiling. The markers are pre-attached on crossroads,
+reception desk, outpatient clinic, cashier’s ofﬁce, and any
+other important places. The wheelchair model used in the
+numerical simulations is the model addressed in III with actu-
+ator dynamics including saturation. The body acceleration
+constraints are all 0.1 m/s 2 and the maximum desired speed
+is 1 m/s. The PID controller is used in the simulations, but
+any other controllers can be used. Outputs of the controller
+are torque signals of two wheels and gains of PID are 10,
+0.1, 0.5, respectively. The gains are set so that the controller
+FIGURE 8. Modified Hybrid Reciprocal Velocity Obstacle (HRVO)
+Algorithm.
+does not show the best performance to show that the proposed
+algorithm is robust to the performance of the controller. The
+HRVO algorithm compared with the proposed algorithm uses
+Dijkstra’s algorithm [31] as global path planning.
+A. PRELIMINARY SIMULATION WITH TOY PROBLEMS
+1) TOY PROBLEM WITH STATIC OBSTACLES
+In this section, the proposed algorithm is compared with
+the HRVO algorithm for toy problems with static obsta-
+cles. A wheelchair starts in front of a static obstacle. The
+wheelchair has to avoid the obstacle and turns at the center
+of a lobby. The design parameters are τc= 3, ta= 0.4 and
+Kmax= 10. Additionally, the wheelchair’s desired attitude at
+the destination is 90◦ only set in the proposed algorithm.
+In Fig. 9(a), the trajectory generated by the HRVO
+algorithm turns with a large radius of curvature, and the
+wheelchair almost bumps into the wall, whereas the trajectory
+generated by the proposed algorithm turns at the waypoint
+with a small radius of curvature, which is the proper shape
+for the path addressed in II-C, as shown in Fig. 9(b).
+Additionally, the wheelchair using the HRVO algorithm
+cannot stop and bumps into the wall at the destination,
+whereas the wheelchair using the proposed algorithm arrives
+VOLUME 8, 2020 208207
+--- Page 10 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+FIGURE 9. Trajectory in the toy problem with a static obstacle: (a) HRVO
+algorithm and (b) proposed algorithm (τ c = 3, ta = 0.4, and Kmax = 10).
+at the destination with the desired attitude. The reason for
+these results is that the HRVO algorithm does not consider the
+system’s time delay, which is caused by differences between
+the real system dynamics and two-wheel robot kinematics,
+including the saturation and time delay of an actuator, the per-
+formance of the controller, caster dynamics, inﬂuences of a
+user, etc. Thus, the HRVO algorithm makes the desired speed
+and attitude speed command while expecting an immediate
+system response. On the other hand, the proposed algorithm
+considers and addresses the differences by generating the
+speed command in advance while taking into account the time
+delay of the system response.
+In Fig. 10, the desired values are those designed by each
+algorithm. In Fig. 10(b), it can be seen that the W AP designs
+the waypoint speed to make the wheelchair satisfy the lateral
+body acceleration constraint at approximately 40 seconds.
+The desired speed proﬁle is designed to minimize the travel
+time while satisfying the longitudinal body acceleration con-
+straint. In Fig. 10(a), the HRVO algorithm does not decrease
+the speed command even when the obstacle is detected
+at approximately 35 seconds, and it makes the wheelchair
+almost bump into the wall. It is because the HRVO algorithm
+does not consider the time delay of the system response.
+On the other hand, the modiﬁed HRVO algorithm considers
+the time delay of the system response so that the wheelchair
+can take action in advance, which is shown again in the
+toy problem with moving obstacles. Note that the proposed
+algorithm designs the desired speed in advance so that the
+true speed follows the tendency of the desired speed. If the
+wheelchair follows this tendency, then the gap between the
+wheelchair’s speed and the desired speed is irrelevant because
+the desired speed is designed in advance.
+In Fig. 11, the body accelerations of the proposed algo-
+rithm are within the body acceleration constraints, whereas
+those of the HRVO algorithm exceed the constraints.
+In Fig. 11(b), when the lateral acceleration increases and is
+poised to exceed the limit, ARGA decreases K to restrain the
+lateral body acceleration.
+FIGURE 10. Speed, attitude, and obstacle detection in the toy problem
+with static obstacles: (a) HRVO algorithm and (b) proposed algorithm
+(τc = 3, ta = 0.4, and Kmax = 10).
+FIGURE 11. Body accelerations, angular rate and angular rate gain in the
+toy problem with static obstacles: (a) HRVO algorithm and (b) proposed
+algorithm (τ c = 3, ta = 0.4, and Kmax = 10).
+2) TOY PROBLEM WITH MOVING OBSTACLES
+In this section, the proposed algorithm is compared with
+the HRVO algorithm for toy problems with moving obsta-
+cles. Three pedestrians act as moving obstacles following
+the HRVO algorithm. Each pedestrian is modeled as the
+ﬁrst-order dynamic system with its own time constant. The
+pedestrians with a small time constant represent people who
+can avoid obstacles quickly, and the pedestrians with a large
+time constant represent people who cannot avoid obstacles
+quickly. Every pedestrian has its own desired speed and time
+constant. In addition, the departure time for each pedestrian
+is adjusted so that the wheelchair and each pedestrian can
+interact. Table 1 shows the desired speed and time constant
+of each pedestrian and the minimum distance between the
+wheelchair and the pedestrians. The desired speed is set
+considering the average walking speed of 4 km/h for humans,
+and the limitation of the minimum distance is set to 0.5 m.
+TABLE 1. Desired speed, time constant of pedestrians, and minimum
+distance from pedestrians in the toy problem (SI units).
+In Table 1, the proposed algorithm is better than the
+HRVO algorithm in terms of the minimum distance between
+208208 VOLUME 8, 2020
+--- Page 11 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+the wheelchair and the pedestrians taken as a whole. Even
+the minimum distance of the HRVO algorithm between the
+wheelchair and pedestrian 3 cannot meet the limitation.
+Furthermore, the proposed algorithm makes smaller move-
+ment than the HRVO algorithm to avoid collisions as shown
+in Fig. 12.
+FIGURE 12. Trajectory in the toy problem with a moving obstacle:
+(a) HRVO algorithm and (b) proposed algorithm (τ c = 3, ta = 0.4, and
+Kmax = 10).
+In Fig. 13, the HRVO algorithm makes excessive com-
+mands in both speed and attitude so that the wheelchair
+cannot follow the commands. In contrast, the modiﬁed HRVO
+algorithm in the proposed algorithm considers the time delay
+of the wheelchair and generates the commands in advance so
+that the wheelchair can follow the commands. Furthermore,
+the proposed algorithm can sufﬁciently reduce the speed,
+which gives pedestrians time to avoid a collision; neverthe-
+less, the pedestrians cannot move quickly. Thus, the minimum
+distances of the proposed algorithm between the wheelchair
+and the pedestrians are larger than that of the HRVO algo-
+rithm when considered as a whole; the wheelchair also
+changes the attitude less. In addition, the body accelerations
+of the proposed algorithm are within the body acceleration
+constraints, whereas those of the HRVO algorithm exceed the
+constraints, as shown in Fig. 14.
+FIGURE 13. Speed, attitude, and obstacle detection in the toy problem
+with moving obstacles: (a) HRVO algorithm and (b) proposed algorithm
+(τc = 3, ta = 0.4, and Kmax = 10).
+FIGURE 14. Body accelerations, angular rate and angular rate gain in the
+toy problem with moving obstacles: (a) HRVO algorithm and (b) proposed
+algorithm (τ c = 3, ta = 0.4, and Kmax = 10).
+3) EFFECTS OF THE PARAMETERS
+In this section, the effects of each design parameter are dis-
+cussed. The environment is same as the toy problem with
+static obstacles in the previous section. First, the effects of τc
+are shown and discussed by decreasing τc from 3 to 1. Then,
+the effects of ta are shown and discussed by decreasing ta
+from 0.4 to 0.1. Finally, the effects of Kmax are shown and
+discussed by decreasing Kmax from 10 to 1.
+τc is the time constant of the actuated wheel’s linear speed
+dynamics modeled as a ﬁrst-order dynamic system, (3). Thus,
+ifτc is large, then the proposed algorithm considers that the
+linear speed of the wheels slowly follows the desired speed.
+As a result, the proposed algorithm makes a speed command
+more in advance considering the time delay of the wheelchair.
+In contrast, if τc is small, then the proposed system makes a
+speed command less in advance since the proposed algorithm
+considers that the wheelchair will follow the speed command
+quickly. However, if the wheelchair is not as fast as the
+proposed algorithm considered, then the wheelchair cannot
+follow the speed command, and the mobility is decreased.
+As a result, the body accelerations are decreased.
+If we compare Figs. 11(b) and 15(b), both the longitudinal
+and lateral body accelerations are decreased with small τc.
+The proposed algorithm generates the desired speed com-
+mand less in advance considering that the wheelchair can
+follow immediately. When the wheelchair’s speed is not
+changed as expected, however, the longitudinal body accel-
+eration and the angular rate are decreased. As a result, both
+the longitudinal and lateral body acceleration decrease as
+τc decreases. Although τc affects both the longitudinal and
+lateral body accelerations,τc is used to meet the longitudinal
+body acceleration constraint sinceτc is dominantly related to
+the desired speed command as (29).
+On the other hand, ta indicates how fast the actuated
+wheel’s linear speed approaches the desired speed. Thus,
+if ta is large, the proposed algorithm considers that the actu-
+ated wheel’s linear speed matches quickly the desired speed.
+This can be interpreted as the wheelchair dynamics being
+close to the two-wheel robot kinematics. In contrast, if ta
+becomes small, the proposed algorithm considers that the
+actuated wheel’s linear speed matches slowly the desired
+VOLUME 8, 2020 208209
+--- Page 12 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+FIGURE 15. Effects of τc in the toy problem with static obstacles (τ c = 1):
+(a) speed, attitude, and obstacle detection and (b) body acceleration,
+angular rate and angular rate gain.
+speed. Thus, the proposed algorithm generates a speed com-
+mand more in advace assuming that the response of the
+wheelchair will be slow. If the time delay of the wheelchair is
+not as large as expected, however, the wheelchair will follow
+the excessive speed command, and the body accelerations
+will exceed the constraints. In Fig. 16, the lateral body accel-
+eration exceeds the constraint at approximately 100 seconds
+and 125 seconds. In addition, if ta is small, the modiﬁed
+HRVO algorithm considers the response of the wheelchair to
+be slow. Thus, the modiﬁed HRVO algorithm makes the small
+speed command for safety. As a result, the speed command
+remains excessively small while the obstacle is detected at the
+beginning.
+FIGURE 16. Effects of ta in the toy problem with static obstacles
+(ta = 0.1): (a) speed, attitude, and obstacle detection and (b) body
+acceleration, angular rate and angular rate gain.
+It seems that ta is the counterpart of τc. ta is, however, not
+involved in the longitudinal body acceleration. The desired
+speed is eventually computed by (29); τc is the only design
+paremeter involved in the longitudinal body acceleration.
+Thus, τc is ﬁrst set to satisfy the longitudinal body accel-
+eration constraint; then, ta is set to satisfy the lateral body
+acceleration constraint.
+Kmax is the upper bound of K . The role of Kmax is that
+if|θd−θ| is sufﬁciently small, the process of θ approach-
+ing θd will be slow. In (31), there is a difference between
+the current attitude and the desired attitude in the denom-
+inator. If the difference goes to zero, the absolute value
+of K goes to inﬁnity resulting in excessive angular veloc-
+ity. Thus, Kmax means that if the difference becomes small
+to a certain level, K is ﬁxed as Kmax, and the angular
+rate computed by (30) no longer increases. If we compare
+Figs. 11(b) and 17(b), the angular rate is decreased as a
+whole with small Kmax. As a result, the lateral body accel-
+eration is decreased, as shown in Fig. 17(b). This means
+that the mobility of the wheelchair is decreased. If we com-
+pare Figs. 17(a) and 10(b), the wheelchair cannot change
+the attitude as desired with a small Kmax. If the parameters
+are manipulated in the opposite direction, it shows opposite
+results.
+FIGURE 17. Effects of Kmax in the toy problem with static obstacles
+(Kmax = 1): (a) speed, attitude, and obstacle detection and (b) body
+accelerations, angular rate and angular rate gain.
+B. EXTENDED SIMULATION IN ACTUAL HOSPITALS
+In this simulation, the proposed algorithm is validated with
+some scenarios in real hospital maps. There are two hospital
+maps: one map is part of the NTIRH’s 1st ﬂoor, and the
+other map is part of SNUH’s 1st ﬂoor. The positions of the
+markers that play the role of waypoints are selected temporar-
+ily, and how the locations of the markers are selected will
+also be an important future work. The design parameters are
+τc = 3, ta = 0.8 and Kmax = 10. The limitation of the
+minimum distance is set to 0.5 m.
+1) SIMULATION IN THE NATIONAL TRAFFIC INJURY
+REHABILITATION HOSPITAL
+The NTIRH was constructed to specialize in rehabilitation.
+Thus, it is meaningful to verify the proposed algorithm in the
+NTIRH. The scenario consists of two parts. One part involves
+moving from the main entrance to the main reception, and
+the other part involves moving from the main reception to
+the outpatient clinic. In particular, a patient comes into the
+NTIRH, rides an autonomous electric wheelchair at the front
+of the main entrance, moves to the main reception, and moves
+to the outpatient clinic to see a doctor. Thus, the desired
+attitudes at the destinations of each part are −80◦ toward the
+main reception and−180◦ toward the outpatient clinic room,
+as shown in Fig. 18. Every pedestrian as a moving obsta-
+cle has their own desired speed and time constant. Table 2
+shows the desired speed and time constant of each pedestrian
+and the minimum distance between the wheelchair and the
+pedestrians.
+208210 VOLUME 8, 2020
+--- Page 13 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+FIGURE 18. The trajectory, speed, attitude, and body accelerations in the
+NTIRH: (a) from the main entrance to the main reception and (b) from the
+main reception to the outpatient clinic.
+TABLE 2. Desired speed, time constant of the pedestrians, and minimum
+distance from the pedestrians in the NTIRH (SI units).
+In Fig. 18, the response of the attitude,θ, oscillates because
+of the controller’s poor performance. However, body accel-
+erations do not exceed the body acceleration constraints
+because the proposed algorithm considers the time delay
+of the system, including the actuator dynamics, perfor-
+mance of the controller, and model uncertainties. Note that
+the wheelchair arrives at the destination with the desired
+attitude. From the main reception to the outpatient clinic,
+the wheelchair detects pedestrians at approximately 60, 100,
+115, and 175 seconds. Every time, the proposed algorithm
+generates the speed and attitude command in advance. Thus,
+the wheelchair can reduce the speed and change the attitude
+while satisfying the body acceleration constraints.
+2) SIMULATION AT SEOUL NATIONAL UNIVERSITY HOSPITAL
+In this section, the proposed algorithm is applied to a more
+complicated environment, SNUH. The scenario consists of
+FIGURE 19. The trajectory, speed, attitude, and body accelerations in
+the SNUH: (a) from the main entrance to the main reception, (b) from the
+main reception to the outpatient clinic, and (c) from the outpatient clinic
+to the cashier’s office.
+TABLE 3. Desired speed, time constant of the pedestrians, and minimum
+distance from the pedestrians in the SNUH (SI units).
+three parts. First, a patient moves from the main entrance to
+the main reception. Second, the patient moves from the main
+reception to the outpatient clinic. Third, the patient moves
+from the outpatient clinic to the cashier’s ofﬁce. The desired
+attitudes at the destinations of each part are 135 ◦ toward
+the main reception, 225◦, toward the outpatient clinic room,
+VOLUME 8, 2020 208211
+--- Page 14 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+and−90◦ toward the cashier, as shown in Fig. 19. Table 3
+shows the desired speed and time constant of each pedestrians
+and the minimum distance between the wheelchair and the
+pedestrians.
+Fig. 19 and Table 3 show that the proposed algorithm oper-
+ates well in a more complicated environment. The minimum
+distances between the wheelchair and the pedestrians are all
+above the limitation, 0.5 m. Furthermore, the body acceler-
+ations are within the body acceleration constraints, while
+the wheelchair arrives at the destinations with the desired
+attitudes.
+VI. CONCLUSION
+In this research, a path planning algorithm for an autonomous
+electric wheelchair being operated in hospitals is proposed.
+The proposed algorithm considers the planning of both local
+and global paths to satisfy body acceleration constraints,
+to avoid collisions, and to transfer efﬁciently through the
+clinical process in hospitals. Two-wheel robot kinematics
+with the ﬁrst-order dynamic system are used to make the
+proposed algorithm applicable to most two-wheel actuated
+systems with more complex components. Wheelchair dynam-
+ics are newly derived, including the user’s inﬂuences on
+the wheelchair, which are used in the numerical simula-
+tions. To satisfy the body acceleration constraints for user
+safety, a waypoint and attitude planning algorithm, speed
+proﬁle design algorithm, angular rate gain adaptation algo-
+rithm, and modiﬁed HRVO algorithm are proposed in this
+study. The performance of the proposed algorithm has been
+demonstrated by extensive numerical simulations with the
+full dynamics of the wheelchair. The simulation results show
+that the proposed algorithm satisﬁes body acceleration con-
+straints while following paths that are appropriate to hospitals
+and that the proposed autonomous electric wheelchair could
+be applied in hospitals.
+Several directions of future work remain to ensure optimal
+operation of an autonomous electric wheelchair in a hospi-
+tal. First, how marker locations are selected is an important
+future work, as mentioned above. Markers are widely used
+as waypoints in indoor environments where GPS cannot be
+used. In addition, markers can aid in wheelchair navigation
+by correcting the accumulated IMU error whenever these
+markers are detected. Markers are carefully chosen, with con-
+sideration for which locations are not only efﬁcient but also
+safe for both a wheelchair and pedestrians. Second, the con-
+cept of path yielding has to be considered. If a wheelchair
+encounters people who can move freely, people will yield the
+path for the wheelchair. In hospitals, however, some patients
+cannot yield the path because their movement may be more
+restricted than those in a wheelchair, such as patients on
+stretchers. In these cases, the wheelchair must yield the path.
+In particular, the concept of path yielding will be important
+future work for a robot operated in a crowd. With those future
+works, experiments with actual wheelchair in real hospitals
+have to be conducted to evaluate and improve the proposed
+algorithm.
+REFERENCES
+[1] ASTNA, Patient Transport—E-Book: Principles and Practice.
+Maryland Heights, MO, USA: Mosby, Aug. 2017. [Online]. Available:
+https://www.xarg.org/ref/a/B075YTLNM8/.
+[2] K. Christensen, G. Doblhammer, R. Rau, and J. W. V aupel, ‘‘Ageing
+populations: The challenges ahead,’’ Lancet, vol. 374, no. 9696,
+pp. 1196–1208, Oct. 2009. [Online]. Available: https://linkinghub.
+elsevier.com/retrieve/pii/S0140673609614604, doi: 10.1016/S0140-
+6736(09)61460-4.
+[3] I. Of, T. H. E. Madrid, I. Plan, O. F. Action, and O. N. Ageing,
+Addressing Challenges Population Ageing Asia Paciﬁc. New Y ork, NY ,
+USA: United Nations, Oct. 2017. [Online]. Available: http://www.un-
+ilibrary.org/population-and-demography/addressing-the-challenges-of-
+population-ageing-in-asia-and-the-paciﬁc_32056b9e-en
+[4] T. J. Crayton and B. M. Meier, ‘‘Autonomous vehicles: Developing
+a public health research agenda to frame the future of transportation
+policy,’’ J. Transp. Health, vol. 6, pp. 245–252, Sep. 2017,
+https://linkinghub.elsevier.com/retrieve/pii/S2214140517300014,
+doi: 10.1016/j.jth.2017.04.004.
+[5] J. Leaman and H. M. La, ‘‘A comprehensive review of smart
+wheelchairs: Past, present, and future,’’ IEEE Trans. Human-Machine
+Syst., vol. 47, no. 4, pp. 486–499, Aug. 2017. [Online]. Available:
+http://arxiv.org/abs/1704.04697
+[6] E. Demeester, M. Nuttin, D. V anhooydonck, and H. V an Brussel, ‘‘A
+model-based, probabilistic framework for plan recognition in shared
+wheelchair control: Experiments and evaluation,’’ IEEE Int. Conf. Intell.
+Robot. Syst., vol. 2., no. c, pp. 1456–1461, Oct. 2004.
+[7] E. Demeester, A. Huntemann, D. V anhooydonck, G. V anacker, A. Degeest,
+H. Brussel, and M. Nuttin, ‘‘Bayesian estimation of wheelchair driver
+intents: Modeling intents as geometric paths tracked by the driver,’’ inProc.
+IEEE/RSJ Int. Conf. Intell. Robots Syst., Oct. 2006, pp. 5775–5780.
+[8] A. Huntemann, E. Demeester, G. V anacker, D. V anhooydonck, J. Philips,
+H. V an Brussel, and M. Nuttin, ‘‘Bayesian plan recognition and shared
+control under uncertainty: Assisting wheelchair drivers by tracking ﬁne
+motion paths,’’ inProc. IEEE/RSJ Int. Conf. Intell. Robots Syst., Oct. 2007,
+pp. 3360–3366.
+[9] A. Huntemann, E. Demeester, M. Nuttin, and H. V an Brussel, ‘‘Online user
+modeling with Gaussian processes for Bayesian plan recognition during
+power-wheelchair steering,’’ in Proc. IEEE/RSJ Int. Conf. Intell. Robots
+Syst., Sep. 2008, pp. 285–292.
+[10] A. Huntemann, E. Demeester, E. V . Poorten, H. V an Brussel, and
+J. De Schutter, ‘‘Probabilistic approach to recognize local navigation plans
+by fusing past driving information with a personalized user model,’’ in
+Proc. IEEE Int. Conf. Robot. Autom., May 2013, pp. 4376–4383.
+[11] T. Taha, J. V . Miro, and G. Dissanayake, ‘‘Wheelchair driver assistance
+and intention prediction using POMDPs,’’ in Proc. 3rd Int. Conf. Intell.
+Sensors, Sensor Netw. Inf., Dec. 2007, pp. 449–454. [Online]. Available:
+http://ieeexplore.ieee.org/document/4496885/
+[12] Y . Morales, A. Watanabe, F. Ferreri, J. Even, K. Shinozawa, and
+N. Hagita, ‘‘Passenger discomfort map for autonomous navigation in a
+robotic wheelchair,’’ Robot. Auto. Syst., vol. 103, pp. 13–26, May 2018,
+doi: 10.1016/j.robot.2018.02.002.
+[13] Y . Morales, T. Miyashita, and N. Hagita, ‘‘Social robotic wheelchair
+centered on passenger and pedestrian comfort,’’Robot. Auto. Syst., vol. 87,
+pp. 355–362, Jan. 2017, https://linkinghub.elsevier.com/retrieve/pii/
+S092188901630570X, doi: 10.1016/j.robot.2016.09.010.
+[14] C. Wang, A. S. Matveev, A. V . Savkin, T. N. Nguyen, and
+H. T. Nguyen, ‘‘A collision avoidance strategy for safe autonomous
+navigation of an intelligent electric-powered wheelchair in dynamic
+uncertain environments with moving obstacles,’’ in Proc. Eur .
+Control Conf. (ECC), Jul. 2013, pp. 4382–4387. [Online]. Available:
+https://ieeexplore.ieee.org/document/6669281/.
+[15] H. Kokubo, T. Shibanoki, T. Chin, and T. Tsuji, ‘‘Obstacle avoidance
+method for electric wheelchairs based on a multi-layered non-contact
+impedance model,’’ inProc. Int. Conf. Artif. Life Robot., May 2017, vol. 22,
+no. 1, pp. 460–463.
+[16] V . T. Nguyen, C. Jayawardena, and I. Ardekani, ‘‘A navigation model for
+side-by-side robotic wheelchairs for optimizing social comfort in cross-
+ing situations,’’ Robot. Auto. Syst., vol. 100, pp. 27–40, Feb. 2018, doi:
+10.1016/j.robot.2017.10.008.
+[17] S. Gulati and B. Kuipers, ‘‘High performance control for graceful motion
+of an intelligent wheelchair,’’ in Proc. IEEE Int. Conf. Robot. Autom.,
+May 2008, pp. 3932–3938.
+208212 VOLUME 8, 2020
+--- Page 15 ---
+Y. Jung et al.: Path Planning Algorithm for an Autonomous Electric Wheelchair in Hospitals
+[18] D. Helbing and P . Molnár, ‘‘Social force model for pedestrian dynam-
+ics,’’ Phys. Rev. E, Stat. Phys. Plasmas Fluids Relat. Interdiscip.
+Top., vol. 51, no. 5, pp. 4282–4286, May 1995. [Online]. Available:
+https://link.aps.org/doi/10.1103/PhysRevE.51.4282
+[19] X.-T. Truong and T.-D. Ngo, ‘‘Dynamic social zone based mobile robot
+navigation for human comfortable safety in social environments,’’ Int.
+J. Social Robot., vol. 8, no. 5, pp. 663–684, Nov. 2016. [Online]. Available:
+http://link.springer.com/10.1007/s12369-016-0352-0
+[20] X.-T. Truong and T. D. Ngo, ‘‘Toward socially aware robot navigation in
+dynamic and crowded environments: A proactive social motion model,’’
+IEEE Trans. Autom. Sci. Eng., vol. 14, no. 4, pp. 1743–1760, Oct. 2017.
+[Online]. Available: http://ieeexplore.ieee.org/document/8011466/.
+[21] B. Kim and J. Pineau, ‘‘Socially adaptive path planning in human environ-
+ments using inverse reinforcement learning,’’ Int. J. Social Robot., vol. 8,
+no. 1, pp. 51–66, Jan. 2016.
+[22] Y . F. Chen, M. Everett, M. Liu, and J. P . How, ‘‘Socially aware motion
+planning with deep reinforcement learning,’’ in Proc. IEEE/RSJ Int. Conf.
+Intell. Robots Syst. (IROS), Sep. 2017, pp. 1343–1350.
+[23] A. Bera, T. Randhavane, R. Prinja, and D. Manocha, ‘‘SocioSense: Robot
+navigation amongst pedestrians with social and psychological constraints,’’
+in Proc. IEEE/RSJ Int. Conf. Intell. Robots Syst. (IROS), Sep. 2017,
+pp. 7018–7025.
+[24] J. Snape, J. V . D. Berg, S. J. Guy, and D. Manocha, ‘‘The hybrid
+reciprocal velocity obstacle,’’ IEEE Trans. Robot., vol. 27, no. 4,
+pp. 696–706, Aug. 2011. [Online]. Available: http://ieeexplore.ieee.
+org/document/5746538/
+[25] P . Fiorini and Z. Shiller, ‘‘Motion planning in dynamic
+environments using velocity obstacles,’’ Int. J. Robot. Res.,
+vol. 17, no. 7, pp. 760–772, Jul. 1998. [Online]. Available:
+http://journals.sagepub.com/doi/10.1177/027836499801700706 and
+http://arxiv.org/abs/1806.07457
+[26] F. Feurtey, ‘‘Simulating the collision avoidance behavior of
+pedestrians,’’ Ph.D. dissertation, Dept. Electron. Eng., Univ. Tokyo,
+Tokyo, Japan, 2000. [Online]. Available: http://www.logos.t.u-
+tokyo.ac.jp/~franck/ﬁles/research_summary.pdf
+[27] J. van den Berg, M. Lin, and D. Manocha, ‘‘Reciprocal velocity
+obstacles for real-time multi-agent navigation,’’ in Proc. IEEE Int.
+Conf. Robot. Autom., May 2008, pp. 1928–1935. [Online]. Available:
+http://ieeexplore.ieee.org/document/4543489/
+[28] A. Chakravarthy and D. Ghose, ‘‘Obstacle avoidance in a dynamic envi-
+ronment: A collision cone approach,’’ IEEE Trans. Syst., Man, Cybern., A,
+Syst. Humans, vol. 28, no. 5, pp. 562–574, Sep. 1998. [Online]. Available:
+http://ieeexplore.ieee.org/document/709600/
+[29] D. Karnopp, ‘‘Computer simulation of stick-slip friction in
+mechanical dynamic systems,’’ J. Dyn. Syst., Meas., Control,
+vol. 107, no. 1, pp. 100–103, Mar. 1985. [Online]. Available:
+https://asmedigitalcollection.asme.org/dynamicsystems/article/107/1/100/
+400601/Computer-Simulation-of-StickSlip-Friction-in
+[30] B. W. Johnson and J. H. Aylor, ‘‘Dynamic modeling of an
+electric wheelchair,’’ IEEE Trans. Ind. Appl., vol. IA-21, no. 5,
+pp. 1284–1293, Sep. 1985. [Online]. Available: http://ieeexplore.ieee.
+org/document/4158136/.
+[31] E. W. Dijkstra, ‘‘A note on two problems in connexion with graphs,’’
+Numerische Math., vol. 1, no. 1, pp. 269–271, Dec. 1959.
+[32] J. A. E. Bryson, Applied Optimal Control. Evanston, IL, USA: Routledge,
+Jan. 1975. [Online]. Available: https://www.xarg.org/ref/a/0891162283/
+YEONTAEK JUNG received the B.S. degree in
+mechanical engineering from Seoul National Uni-
+versity, Seoul, South Korea, in 2016. He is cur-
+rently pursuing the Ph.D. degree in aerospace
+engineering from Seoul National University. His
+research interests include guidance and control of
+robots with ﬂapping wings and machine learning.
+YOONJAE KIM received the B.S. degree in
+mechanical and aerospace engineering from Seoul
+National University (SNU) in 2014, and the Ph.D.
+degree from the Interdisciplinary Program for Bio-
+engineering, Seoul National University (SNU),
+in 2018. He is currently a Researcher with the
+Institute of Medical and Biological Engineering,
+SNU. His research interests include the develop-
+ment of robotic hardware and algorithms.
+WOO HYUNG LEE (Member, IEEE) received the
+B.S. degree from the Seoul National University
+College of Medicine, in 2011, and the Ph.D. degree
+in biomedical engineering from Seoul National
+University College of Medicine, in 2020. He ﬁn-
+ished his residency (2016) and fellowship (2017)
+at the Rehabilitation Medicine at Seoul National
+University Hospital. As a Junior Faculty Member,
+he is currently an Assistant Clinical Professor with
+the Department of Rehabilitation Medicine, Seoul
+National University Hospital. His research areas include pediatric neu-
+rorehabilitation, motor recovery, swallowing rehabilitation, and prognostic
+modeling.
+MOON SUK BANG is currently a Professor with
+the Department of Rehabilitation Medicine, Seoul
+National University College of Medicine. From
+2011 to 2013, he has served as the President of the
+Korea National Rehabilitation Center. Since 2013,
+he has been the Secretary of the Asia-Oceanian
+Society of Physical and Rehabilitation Medicine
+(AOSPRM). His main clinical practice is focused
+on spinal cord injury and pediatric rehabilitation,
+including cerebral palsy, spina biﬁda, and spas-
+ticity management. His research interests include spasticity management,
+robotic rehabilitation, and aging problems related to pediatric disability.
+He was the Editor-in-Chief of the Annals of Rehabilitation Medicine (ARM),
+which is the ofﬁcial journal of the Korean Academy of Rehabilitation
+Medicine (KARM). He is also the Chairperson of KARM.
+YOUDAN KIM (Senior Member, IEEE) received
+the B.S. and M.S. degrees in aeronautical engineer-
+ing from Seoul National University, South Korea,
+in 1983 and 1985, respectively, and the Ph.D.
+degree in aerospace engineering from Texas A&M
+University, in 1990. He joined the Faculty of Seoul
+National University, in 1992, where he is currently
+a Professor with the Department of Mechanical
+and Aerospace Engineering. His current research
+interests include vehicle control system design,
+reconﬁgurable control system design, as well as path planning and guidance
+techniques for autonomous vehicles.
+SUNGWAN KIM (Senior Member, IEEE)
+received the B.S. degree in electronics engineering
+and the M.S. degree in control & instrumenta-
+tion engineering from Seoul National University
+(SNU), in 1985 and 1987, respectively, and the
+Ph.D. degree in electrical engineering from the
+University of California, Los Angeles, CA, USA,
+in 1993. Since 2010, he has been a Professor
+with the Department of Biomedical Engineering,
+SNU College of Medicine. Prior to joining SNU,
+he worked as a Senior Aerospace Engineer at the National Aeronautics and
+Space Administration (NASA) Langley Research Center, USA. He is an
+Associate Fellow of the AIAA.
+VOLUME 8, 2020 208213

@@ -1,0 +1,68 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE / Editor configuration & OS metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+desktop.ini
+Thumbs.db
+.DS_Store
+*.tmp
+
+# Simulation Output Files & Generated Media
+outputs/
+*.mp4
+*.avi
+*.png
+*.jpg
+*.jpeg
+*.svg
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+!assets/**/*.svg
+
+# Diagnostic / Log text files generated during simulation runs
+test_out*.txt
+main_output.txt
+*.log
+
+# Large RL Model Checkpoints & TensorBoard Logs (optional to keep directory)
+rl_models/*.zip
+rl_models/events.out.tfevents.*
